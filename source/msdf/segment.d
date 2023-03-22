@@ -19,7 +19,7 @@ enum MSDFGEN_CUBIC_SEARCH_STARTS = 4.0;
 enum MSDFGEN_CUBIC_SEARCH_STEPS = 4.0;
 
 private {
-    void _segPointBounds(vec2d p, ref double l, ref double b, ref double r, ref double t) {
+    void _msdfSegPointBounds(vec2d p, ref double l, ref double b, ref double r, ref double t) {
         if (p.x < l) l = p.x;
         if (p.y < b) b = p.y;
         if (p.x > r) r = p.x;
@@ -118,8 +118,8 @@ public:
 
     override
     void bound(ref double l, ref double b, ref double r, ref double t) const {
-        _segPointBounds(p[0], l, b, r, t);
-        _segPointBounds(p[1], l, b, r, t);
+        _msdfSegPointBounds(p[0], l, b, r, t);
+        _msdfSegPointBounds(p[1], l, b, r, t);
     }
 
     override
@@ -289,18 +289,18 @@ public:
 
     override
     void bound(ref double l, ref double b, ref double r, ref double t) const {
-        _segPointBounds(p[0], l, b, r, t);
-        _segPointBounds(p[2], l, b, r, t);
+        _msdfSegPointBounds(p[0], l, b, r, t);
+        _msdfSegPointBounds(p[2], l, b, r, t);
         vec2d bot = (p[1]-p[0])-(p[2]-p[1]);
         if (bot.x) {
             double param = (p[1].x-p[0].x)/bot.x;
             if (param > 0 && param < 1)
-                _segPointBounds(point(param), l, b, r, t);
+                _msdfSegPointBounds(point(param), l, b, r, t);
         }
         if (bot.y) {
             double param = (p[1].y-p[0].y)/bot.y;
             if (param > 0 && param < 1)
-                _segPointBounds(point(param), l, b, r, t);
+                _msdfSegPointBounds(point(param), l, b, r, t);
         }
     }
     
@@ -509,8 +509,8 @@ public:
 
     override
     void bound(ref double l, ref double b, ref double r, ref double t) const {
-        _segPointBounds(p[0], l, b, r, t);
-        _segPointBounds(p[3], l, b, r, t);
+        _msdfSegPointBounds(p[0], l, b, r, t);
+        _msdfSegPointBounds(p[3], l, b, r, t);
         vec2d a0 = p[1]-p[0];
         vec2d a1 = 2*(p[2]-p[1]-a0);
         vec2d a2 = p[3]-3*p[2]+3*p[1]-p[0];
@@ -519,11 +519,11 @@ public:
         solutions = solveQuadratic(params, a2.x, a1.x, a0.x);
         for (int i = 0; i < solutions; ++i)
             if (params[i] > 0 && params[i] < 1)
-                _segPointBounds(point(params[i]), l, b, r, t);
+                _msdfSegPointBounds(point(params[i]), l, b, r, t);
         solutions = solveQuadratic(params, a2.y, a1.y, a0.y);
         for (int i = 0; i < solutions; ++i)
             if (params[i] > 0 && params[i] < 1)
-                _segPointBounds(point(params[i]), l, b, r, t);
+                _msdfSegPointBounds(point(params[i]), l, b, r, t);
     }
 
     override

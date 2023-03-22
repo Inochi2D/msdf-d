@@ -4,14 +4,14 @@ import msdf.common;
 import inmath;
 
 private {
-    void _sdfBoundPoint(ref double l, ref double b, ref double r, ref double t, vec2d p) {
+    void _msdfBoundPoint(ref double l, ref double b, ref double r, ref double t, vec2d p) {
         if (p.x < l) l = p.x;
         if (p.y < b) b = p.y;
         if (p.x > r) r = p.x;
         if (p.y > t) t = p.y;
     }
 
-    double _sdfShoelace(vec2d a, vec2d b) {
+    double _msdfShoelace(vec2d a, vec2d b) {
         return (b.x-a.x)*(a.y+b.y);
     }
 }
@@ -42,7 +42,7 @@ public:
                 if (q > 0)
                     miterLength = min(1/sqrt(q), miterLimit);
                 vec2d miter = edge.point(0)+border*miterLength*(prevDir+dir).normalized;
-                _sdfBoundPoint(l, b, r, t, miter);
+                _msdfBoundPoint(l, b, r, t, miter);
             }
             prevDir = edge.direction(1).normalized;
         }
@@ -54,20 +54,20 @@ public:
         double total = 0;
         if (edges.length == 1) {
             vec2d a = edges[0].point(0), b = edges[0].point(1/3.), c = edges[0].point(2/3.);
-            total += _sdfShoelace(a, b);
-            total += _sdfShoelace(b, c);
-            total += _sdfShoelace(c, a);
+            total += _msdfShoelace(a, b);
+            total += _msdfShoelace(b, c);
+            total += _msdfShoelace(c, a);
         } else if (edges.length == 2) {
             vec2d a = edges[0].point(0), b = edges[0].point(.5), c = edges[1].point(0), d = edges[1].point(.5);
-            total += _sdfShoelace(a, b);
-            total += _sdfShoelace(b, c);
-            total += _sdfShoelace(c, d);
-            total += _sdfShoelace(d, a);
+            total += _msdfShoelace(a, b);
+            total += _msdfShoelace(b, c);
+            total += _msdfShoelace(c, d);
+            total += _msdfShoelace(d, a);
         } else {
             vec2d prev = edges[$-1].point(0);
             foreach (edge; edges) {
                 vec2d cur = edges[$-1].point(0);
-                total += _sdfShoelace(prev, cur);
+                total += _msdfShoelace(prev, cur);
                 prev = cur;
             }
         }
