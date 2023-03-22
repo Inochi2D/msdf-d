@@ -16,7 +16,7 @@ private {
     }
 }
 
-struct MsdfContour {
+struct Contour {
 public:
     EdgeSegment[] edges;
 
@@ -44,7 +44,7 @@ public:
                 vec2d miter = edge.point(0)+border*miterLength*(prevDir+dir).normalized;
                 _sdfBoundPoint(l, b, r, t, miter);
             }
-            prevDir = edge.direction(1).normalize(true);
+            prevDir = edge.direction(1).normalized;
         }
     }
 
@@ -71,12 +71,12 @@ public:
                 prev = cur;
             }
         }
-        return sign(total);
+        return cast(int)sign(total);
     }
 
     void reverse() {
         EdgeSegment tmp;
-        for(int i = edges.length/2; i > 0; --i) {
+        for(int i = cast(int)edges.length/2; i > 0; --i) {
             tmp = edges[i-1];
             edges[i-1] = edges[edges.length-i];
             edges[edges.length-i] = tmp;
