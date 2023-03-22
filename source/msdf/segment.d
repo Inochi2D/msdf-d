@@ -2,9 +2,7 @@ module msdf.segment;
 import inmath;
 import inmath.interpolate;
 import inmath.math;
-import msdf.edgeholder;
 import msdf.common;
-import core.stdc.tgmath;
 
 enum EdgeColor {
     BLACK,
@@ -104,7 +102,7 @@ public:
             if (abs(orthoDistance) < endpointDistance)
                 return vec2d(orthoDistance, 0);
         }
-        return vec2d(nzsign(cross(aq, ab))*endpointDistance, fabs(dot(ab.normalized(), eq.normalized())));
+        return vec2d(nzsign(cross(aq, ab))*endpointDistance, abs(dot(ab.normalized(), eq.normalized())));
     }
 
     override
@@ -112,7 +110,7 @@ public:
         if ((y >= p[0].y && y < p[1].y) || (y >= p[1].y && y < p[0].y)) {
             double param = (y-p[0].y)/(p[1].y-p[0].y);
             x[0] = lerp(p[0].x, p[1].x, param);
-            dy[0] = sign(p[1].y-p[0].y);
+            dy[0] = cast(int)sign(p[1].y-p[0].y);
             return 1;
         }
         return 0;
@@ -143,12 +141,12 @@ public:
 
     override 
     void splitInThirds(ref EdgeSegment part1, ref EdgeSegment part2, ref EdgeSegment part3) const {
-        part = new LinearSegment(p[0], point(1/3.0), color);
-        part = new LinearSegment(point(1/3.0), point(2/3.0), color);
-        part = new LinearSegment(point(2/3.0), p[1], color);
+        part1 = new LinearSegment(p[0], point(1/3.0), color);
+        part2 = new LinearSegment(point(1/3.0), point(2/3.0), color);
+        part3 = new LinearSegment(point(2/3.0), p[1], color);
     }
 
-    vec2d length() const {
+    double length() const {
         return (p[0]-p[1]).length;
     }
 }
@@ -181,7 +179,7 @@ public:
     override
     vec2d direction(double param) const {
         vec2d tangent = lerp(p[1]-p[0], p[2]-p[1], param);
-        if (!tangent)
+        if (!tangent.x && !tangent.y)
             return p[2]-p[0];
         return tangent;
     }
@@ -246,9 +244,9 @@ public:
                 nextDY = 1;
         }
         {
-            Vector2 ab = p[1]-p[0];
-            Vector2 br = p[2]-p[1]-ab;
-            double t[2];
+            vec2d ab = p[1]-p[0];
+            vec2d br = p[2]-p[1]-ab;
+            double[2] t;
             int solutions = solveQuadratic(t, br.y, 2*ab.y, p[0].y-y);
             // Sort solutions
             double tmp;
@@ -328,6 +326,13 @@ public:
             p[1] = origP1;
     }
 
+    override
+    void splitInThirds(ref EdgeSegment part1, ref EdgeSegment part2, ref EdgeSegment part3) const {
+        part1 = new QuadraticSegment(p[0], lerp(p[0], p[1], 1/3.), point(1/3.), color);
+        part2 = new QuadraticSegment(point(1/3.), lerp(lerp(p[0], p[1], 5/9.), lerp(p[1], p[2], 4/9.), .5), point(2/3.), color);
+        part3 = new QuadraticSegment(point(2/3.), lerp(p[1], p[2], 2/3.), p[2], color);
+    }
+
     double length() const {
         vec2d ab = p[1]-p[0];
         vec2d br = p[2]-p[1]-ab;
@@ -381,7 +386,7 @@ public:
     override
     vec2d direction(double param) const {
         vec2d tangent = lerp(lerp(p[1]-p[0], p[2]-p[1], param), lerp(p[2]-p[1], p[3]-p[2], param), param);
-        if (!tangent) {
+        if (!tangent.x && !tangent.y) {
             if (param == 0) return p[2]-p[0];
             if (param == 1) return p[3]-p[1];
         }
@@ -413,7 +418,7 @@ public:
         }
         // Iterative minimum distance search
         for (int i = 0; i <= MSDFGEN_CUBIC_SEARCH_STARTS; ++i) {
-            double t = (double) i/MSDFGEN_CUBIC_SEARCH_STARTS;
+            double t = cast(double) i/MSDFGEN_CUBIC_SEARCH_STARTS;
             vec2d qe = qa+3*t*ab+3*t*t*br+t*t*t*as;
             for (int step = 0; step < MSDFGEN_CUBIC_SEARCH_STEPS; ++step) {
                 // Improve t
@@ -454,7 +459,7 @@ public:
             vec2d ab = p[1]-p[0];
             vec2d br = p[2]-p[1]-ab;
             vec2d as = (p[3]-p[2])-(p[2]-p[1])-br;
-            double t[3];
+            double[3] t;
             int solutions = solveCubic(t, as.y, 3*br.y, 3*ab.y, p[0].y-y);
             // Sort solutions
             double tmp;
@@ -564,6 +569,7 @@ public:
             case 1:
                 p[2] -= amount*(dir-sign(h)*sqrt(abs(h))*normal);
                 break;
+            default: break;
         }
     }
 }
