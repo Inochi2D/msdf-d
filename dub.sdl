@@ -1,0 +1,7 @@
+name "msdf-d"
+description "msdfgen port for D"
+authors "Viktor Chlumsky" "Luna"
+copyright "Copyright © 2023, Luna"
+license "MIT"
+dependency "inmath" version="~>1.0.5"
+targetPath "out/"
