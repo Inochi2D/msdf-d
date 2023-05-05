@@ -21,13 +21,16 @@ private {
     }
 }
 
+/// Vector shape representation.
 class Shape {
 public:
     struct Bounds {
         double l, b, r, t;
     }
 
+    /// The list of contours the shape consists of.
     Contour[] contours;
+    /// Specifies whether the shape uses bottom-to-top (false) or top-to-bottom (true) Y coordinates.
     bool inverseYAxis;
 
     this() {
