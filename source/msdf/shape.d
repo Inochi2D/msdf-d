@@ -1,4 +1,4 @@
-module soba.fonts.msdf.shape;
+module msdf.shape;
 import msdf.contour;
 import msdf.scanline;
 import msdf.segment;
