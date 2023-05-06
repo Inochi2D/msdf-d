@@ -27,6 +27,7 @@
 module msdf;
 
 import msdf.shape;
+import msdf.bitmap;
 
 /// Mode of operation.
 enum Mode {
@@ -98,6 +99,27 @@ struct GeneratorConfig {
     }
 }
 
-void generateMSDF(ref Shape shape, double range, GeneratorConfig config = GeneratorConfig(true)) {
+class DistancePixelConversion(T) 
+    if (is(T == MultiDistance)) {
+private:
+    double invRange;
+
+public:
+    alias BitmapType = Bitmap!(float, 3);
+
+    void opCall(float[] pixels, ref const(MultiDistance) distance)
+        in(pixels.length == 3, "Invalid pixels length.") {
+        pixels[0] = cast(float) (invRange * distance.r + .5);
+        pixels[1] = cast(float) (invRange * distance.g + .5);
+        pixels[2] = cast(float) (invRange * distance.b + .5);
+    }
+}
+
+void generateDistanceField(T)(const(T.BitmapType) output, const(Shape) shape, const(Projection) projection, double range) {
+    auto distancePixelConversion = new DistancePixelConversion!(T.DistanceType)();
+    
+}
+
+void generateMSDF(ref Bitmap!(float, 3) output, ref Shape shape, ref Projection projection, double range, GeneratorConfig config = GeneratorConfig(true)) {
 
 }
