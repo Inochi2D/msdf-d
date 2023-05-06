@@ -1,5 +1,7 @@
 /**
     Partial port of msdfgen by Viktor Chlumsky
+    by LunaTheFoxgirl and ZyeByte
+    Copyright (c) 2023, Inochi2D Project
     
     --- License ---
 
