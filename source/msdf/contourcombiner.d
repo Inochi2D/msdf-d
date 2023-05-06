@@ -6,6 +6,7 @@ import std.math : abs;
 import inmath.linalg;
 import msdf.contour;
 import msdf.edgeselectors;
+import msdf.shape;
 
 private {
     void _msdfInitDistance(ref double distance) {
@@ -63,8 +64,8 @@ public:
 
     this(in Shape shape) {
         windings.reserve(shape.contours.length);
-        foreach (Contour contour; shape.contours)
-            windows ~= contour.winding();
+        foreach (contour; shape.contours)
+            windings ~= contour.winding();
         edgeSelectors.length = shape.contours.length;
     }
 

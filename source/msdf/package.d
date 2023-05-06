@@ -30,6 +30,9 @@ module msdf;
 
 import msdf.shape;
 import msdf.bitmap;
+import msdf.contourcombiner;
+import msdf.edgeselectors;
+import msdf.projection;
 
 /// Mode of operation.
 enum Mode {
@@ -101,6 +104,19 @@ struct GeneratorConfig {
     }
 }
 
+class DistancePixelConversion(T)
+    if (is(T == double)) {
+private:
+    double invRange;
+
+public:
+    alias BitmapType = Bitmap!(float, 1);
+
+    void opCall(float[] pixels, ref const(MultiDistance) distance) {
+        pixels = cast(float) (invRange * distance * 0.5);
+    }
+}
+
 class DistancePixelConversion(T) 
     if (is(T == MultiDistance)) {
 private:
@@ -117,11 +133,14 @@ public:
     }
 }
 
-void generateDistanceField(T)(const(T.BitmapType) output, const(Shape) shape, const(Projection) projection, double range) {
+void generateDistanceField(T)(const(DistancePixelConversion!(T.DistanceType).BitmapType) output, const(Shape) shape, const(Projection) projection, double range) {
     auto distancePixelConversion = new DistancePixelConversion!(T.DistanceType)();
     
 }
 
 void generateMSDF(ref Bitmap!(float, 3) output, ref Shape shape, ref Projection projection, double range, GeneratorConfig config = GeneratorConfig(true)) {
-
+    if (config.overlapSupport)
+        generateDistanceField!(OverlappingContourCombiner!MultiDistanceSelector)(output, shape, projection, range);
+    else
+        generateDistanceField!(SimpleContourCombiner!MultiDistanceSelector)(output, shape, projection, range);
 }

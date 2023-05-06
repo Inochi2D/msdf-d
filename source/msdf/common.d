@@ -105,7 +105,11 @@ int solveCubic(double[3] x, double a, double b, double c, double d) {
 }
 
 pragma(inline, true)
-T mix(T, S)(T a, T b, S weight)
-    if (isNumeric!T && isFloatingPoint!S) {
-    return cast(T) ((cast(S) (1)-weight)*a+weight*b);
+double dotProduct(in vec2d a, in vec2d b) {
+    return a.x*b.x+a.y*b.y;
+}
+
+pragma(inline, true)
+double crossProduct(in vec2d a, in vec2d b) {
+    return a.x*b.y-a.y*b.x;
 }

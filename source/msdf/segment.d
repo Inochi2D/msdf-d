@@ -3,6 +3,8 @@ import inmath;
 import inmath.interpolate;
 import inmath.math;
 import msdf.common;
+import std.math : abs;
+import msdf.signeddistance;
 
 enum EdgeColor {
     BLACK,
@@ -43,7 +45,7 @@ public:
     /// Returns the change of direction (second derivative) at the point specified by the parameter.
     abstract vec2d directionChange(double param) const;
     /// Returns the minimum signed distance between origin and the edge.
-    abstract vec2d signedDistance(vec2d origin, ref double param) const;
+    abstract SignedDistance signedDistance(vec2d origin, ref double param) const;
     /// Outputs a list of (at most three) intersections (their X coordinates) with an infinite horizontal scanline at y and returns how many there are.
     abstract int scanlineIntersections(double[3] x, int[3] dy, double y) const;
     /// Adjusts the bounding box to fit the edge segment.
@@ -57,6 +59,32 @@ public:
     abstract void moveEndPoint(vec2d to);
     /// Splits the edge segments into thirds which together represent the original edge.
     abstract void splitInThirds(ref EdgeSegment part1, ref EdgeSegment part2, ref EdgeSegment part3) const;
+
+    void distanceToPseudoDistance(ref SignedDistance distance, in vec2d origin, double param) const {
+        if (param < 0) {
+            vec2d dir = direction(0).normalized();
+            vec2d aq = origin-point(0);
+            double ts = dotProduct(aq, dir);
+            if (ts < 0) {
+                double pseudoDistance = crossProduct(aq, dir);
+                if (abs(pseudoDistance) <= abs(distance.distance)) {
+                    distance.distance = pseudoDistance;
+                    distance.dot = 0;
+                }
+            }
+        } else if (param > 1) {
+            vec2d dir = direction(1).normalized();
+            vec2d bq = origin-point(1);
+            double ts = dotProduct(bq, dir);
+            if (ts > 0) {
+                double pseudoDistance = crossProduct(bq, dir);
+                if (abs(pseudoDistance) <= abs(distance.distance)) {
+                    distance.distance = pseudoDistance;
+                    distance.dot = 0;
+                }
+            }
+        }
+    }
 }
 
 class LinearSegment : EdgeSegment {
@@ -91,7 +119,7 @@ public:
     }
 
     override
-    vec2d signedDistance(vec2d origin, ref double param) const {
+    SignedDistance signedDistance(vec2d origin, ref double param) const {
         vec2d aq = origin-p[0];
         vec2d ab = p[1]-p[0];
         param = dot(aq, ab)/dot(ab, ab);
@@ -100,9 +128,9 @@ public:
         if (param > 0 && param < 1) {
             double orthoDistance = dot(ab.getOrthonormal(false), aq);
             if (abs(orthoDistance) < endpointDistance)
-                return vec2d(orthoDistance, 0);
+                return SignedDistance(orthoDistance, 0);
         }
-        return vec2d(nzsign(cross(aq, ab))*endpointDistance, abs(dot(ab.normalized(), eq.normalized())));
+        return SignedDistance(nzsign(cross(aq, ab))*endpointDistance, abs(dot(ab.normalized(), eq.normalized())));
     }
 
     override
@@ -190,7 +218,7 @@ public:
     }
 
     override
-    vec2d signedDistance(vec2d origin, ref double param) const {
+    SignedDistance signedDistance(vec2d origin, ref double param) const {
         vec2d qa = p[0]-origin;
         vec2d ab = p[1]-p[0];
         vec2d br = p[2]-p[1]-ab;
@@ -224,11 +252,11 @@ public:
         }
 
         if (param >= 0 && param <= 1)
-            return vec2d(minDistance, 0);
+            return SignedDistance(minDistance, 0);
         if (param < .5)
-            return vec2d(minDistance, abs(dot(direction(0).normalized(), qa.normalized())));
+            return SignedDistance(minDistance, abs(dot(direction(0).normalized(), qa.normalized())));
         else
-            return vec2d(minDistance, abs(dot(direction(1).normalized(), (p[2]-origin).normalized())));
+            return SignedDistance(minDistance, abs(dot(direction(1).normalized(), (p[2]-origin).normalized())));
     }
     
 
@@ -399,7 +427,7 @@ public:
     }
 
     override
-    vec2d signedDistance(vec2d origin, ref double param) const {
+    SignedDistance signedDistance(vec2d origin, ref double param) const {
         vec2d qa = p[0]-origin;
         vec2d ab = p[1]-p[0];
         vec2d br = p[2]-p[1]-ab;
@@ -437,11 +465,11 @@ public:
         }
 
         if (param >= 0 && param <= 1)
-            return vec2d(minDistance, 0);
+            return SignedDistance(minDistance, 0);
         if (param < .5)
-            return vec2d(minDistance, abs(dot(direction(0).normalized(), qa.normalized())));
+            return SignedDistance(minDistance, abs(dot(direction(0).normalized(), qa.normalized())));
         else
-            return vec2d(minDistance, abs(dot(direction(1).normalized(), (p[3]-origin).normalized())));
+            return SignedDistance(minDistance, abs(dot(direction(1).normalized(), (p[3]-origin).normalized())));
     }
 
     override

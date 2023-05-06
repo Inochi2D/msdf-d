@@ -5,6 +5,7 @@ import std.math : abs;
 import inmath.linalg;
 import msdf.signeddistance;
 import msdf.segment;
+import msdf.common;
 
 enum DISTANCE_DELTA_FACTOR = 1.001;
 
@@ -29,10 +30,10 @@ public:
     }
 
     static bool getPseudoDistance(ref double distance, in vec2d ep, in vec2d edgeDir) {
-        double ts = ep.dot(edgeDir);
+        double ts = ep.dotProduct(edgeDir);
 
         if (ts > 0) {
-            double pseudoDistance = ep.cross(edgeDir);
+            double pseudoDistance = ep.crossProduct(edgeDir);
             if (abs(pseudoDistance) < abs(distance)) {
                 distance = pseudoDistance;
                 return true;
@@ -50,7 +51,7 @@ public:
     }
 
     void reset(double delta) {
-        minTrueDistance += (minTrueDistance.distance < 0 ? -1 : 1) * delta;
+        minTrueDistance.distance += (minTrueDistance.distance < 0 ? -1 : 1) * delta;
         minNegativePseudoDistance = -abs(minTrueDistance.distance);
         minPositivePseudoDistance = abs(minTrueDistance.distance);
         nearEdge = null;
@@ -102,7 +103,7 @@ public:
             minPositivePseudoDistance = other.minPositivePseudoDistance;
     }
 
-    double computeDistance(in vec2d p) const {
+    double computeDistance(in vec2d p) inout {
         double minDistance = minTrueDistance.distance < 0 ? minNegativePseudoDistance : minPositivePseudoDistance;
         if (nearEdge) {
             SignedDistance distance = minTrueDistance;
@@ -113,7 +114,7 @@ public:
         return minDistance;
     }
 
-    SignedDistance trueDistance() const {
+    SignedDistance trueDistance() inout {
         return minTrueDistance;
     }
 }
@@ -141,12 +142,12 @@ public:
 
             vec2d ap = p-edge.point(0);
             vec2d bp = p-edge.point(1);
-            vec2d aDir = edge.direction(0).normalize();
-            vec2d bDir = edge.direction(1).normalize();
-            vec2d prevDir = prevEdge.direction(1).normalize();
-            vec2d nextDir = nextEdge.direction(0).normalize();
-            double add = ap.dot((prevDir+aDir).normalize());
-            double bdd = -bp.dot((bDir+nextDir).normalize());
+            vec2d aDir = edge.direction(0).normalized();
+            vec2d bDir = edge.direction(1).normalized();
+            vec2d prevDir = prevEdge.direction(1).normalized();
+            vec2d nextDir = nextEdge.direction(0).normalized();
+            double add = ap.dotProduct((prevDir+aDir).normalized());
+            double bdd = -bp.dotProduct((bDir+nextDir).normalized());
             if (add > 0) {
                 double pd = distance.distance;
                 if (getPseudoDistance(pd, ap, -aDir))
@@ -164,7 +165,7 @@ public:
         }
     }
 
-    DistanceType distance() const {
+    DistanceType distance() inout {
         return computeDistance(p);
     }
 }
@@ -201,16 +202,16 @@ public:
             if (edge.color&EdgeColor.BLUE)
                 b.addEdgeTrueDistance(edge, distance, param);
             cache.point = p;
-            cache.absDistance = fabs(distance.distance);
+            cache.absDistance = abs(distance.distance);
 
             vec2d ap = p-edge.point(0);
             vec2d bp = p-edge.point(1);
-            vec2d aDir = edge.direction(0).normalize();
-            vec2d bDir = edge.direction(1).normalize();
-            vec2d prevDir = prevEdge.direction(1).normalize();
-            vec2d nextDir = nextEdge.direction(0).normalize();
-            double add = ap.dot((prevDir+aDir).normalize());
-            double bdd = -bp.dot((bDir+nextDir).normalize());
+            vec2d aDir = edge.direction(0).normalized();
+            vec2d bDir = edge.direction(1).normalized();
+            vec2d prevDir = prevEdge.direction(1).normalized();
+            vec2d nextDir = nextEdge.direction(0).normalized();
+            double add = ap.dotProduct((prevDir+aDir).normalized());
+            double bdd = -bp.dotProduct((bDir+nextDir).normalized());
             if (add > 0) {
                 double pd = distance.distance;
                 if (PseudoDistanceSelectorBase.getPseudoDistance(pd, ap, -aDir)) {
@@ -247,7 +248,7 @@ public:
         b.merge(other.b);
     }
 
-    DistanceType distance() const {
+    DistanceType distance() inout {
         MultiDistance multiDistance;
         multiDistance.r = r.computeDistance(p);
         multiDistance.g = g.computeDistance(p);
@@ -255,7 +256,7 @@ public:
         return multiDistance;
     }
 
-    SignedDistance trueDistance() const {
+    SignedDistance trueDistance() inout {
         SignedDistance distance = r.trueDistance();
         if (g.trueDistance() < distance)
             distance = g.trueDistance();

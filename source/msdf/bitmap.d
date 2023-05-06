@@ -26,6 +26,7 @@ public:
         pixels = orig.pixels.dup;
     }
 
+    version(none)
     Bitmap!(T, N) opAssign(const(Bitmap!(T, N)) orig) {
         if (pixels != orig.pixels) {
             w = orig.w;
@@ -46,7 +47,7 @@ public:
     }
 
     inout(T)* opCall(int x, int y) inout {
-        return pixels[N * (w*y+x)];
+        return &pixels[N * (w*y+x)];
     }
 
     inout(T)* opCast(T)() inout {

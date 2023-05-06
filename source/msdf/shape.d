@@ -2,7 +2,6 @@ module msdf.shape;
 import msdf.contour;
 import msdf.scanline;
 import msdf.segment;
-import msdf.common : mix;
 import inmath;
 import std.algorithm.sorting;
 
@@ -153,7 +152,7 @@ public:
                     y1 = edge.point(1).y;
                 foreach (ref edge; contours[i].edges)
                     y1 = edge.point(ratio).y; // in case all endpoints are in a horizontal line
-                double y = mix(y0, y1, ratio);
+                double y = lerp(y0, y1, ratio);
                 // Scanline through whole shape at Y
                 double[3] x;
                 int[3] dy;
