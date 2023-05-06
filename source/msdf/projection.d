@@ -19,7 +19,7 @@ public:
     }
 
     vec2d unproject(in vec2d coord) const {
-        return coord / scale - translate;
+        return vec2d(coord.x / scale.x, coord.y / scale.y) - translate;
     }
 
     vec2d projectVector(in vec2d vector) const {
@@ -27,7 +27,7 @@ public:
     }
 
     vec2d unprojectVector(in vec2d vector) const {
-        return vector / scale;
+        return vec2d(vector.x / scale.x, vector.y - scale.y);
     }
 
     double projectX(double x) const {

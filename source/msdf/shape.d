@@ -2,6 +2,7 @@ module msdf.shape;
 import msdf.contour;
 import msdf.scanline;
 import msdf.segment;
+import msdf.common : mix;
 import inmath;
 import std.algorithm.sorting;
 
@@ -160,7 +161,7 @@ public:
                     foreach (ref edge; contours[j].edges) {
                         int n = edge.scanlineIntersections(x, dy, y);
                         for (int k = 0; k < n; ++k) {
-                            Intersection intersection = { x[k], dy[k], j };
+                            Intersection intersection = { x[k], dy[k], cast(int) j };
                             intersections ~= intersection;
                         }
                     }
