@@ -1,4 +1,7 @@
 module msdf.common;
+
+import std.traits : isNumeric, isFloatingPoint;
+
 import inmath;
 
 vec2d getOrthonormal(vec2d self, bool polarity = true, bool allowZero = false) {
@@ -99,4 +102,10 @@ int solveCubic(double[3] x, double a, double b, double c, double d) {
             return solveCubicNormed(x, bn, c/a, d/a);
     }
     return solveQuadratic(x[0..2], b, c, d);
+}
+
+pragma(inline, true)
+T mix(T, S)(T a, T b, S weight)
+    if (isNumeric!T && isFloatingPoint!S) {
+    return cast(T) ((cast(S) (1)-weight)*a+weight*b);
 }
