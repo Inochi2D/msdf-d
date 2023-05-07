@@ -23,7 +23,7 @@ private {
         return distance;
     }
 
-    double _msdfResolveDistance(in MultiDistance distance) {
+    double _msdfResolveDistance( MultiDistance distance) {
         return max(min(distance.r, distance.g), min(max(distance.r, distance.g), distance.b));
     }
 }
@@ -36,10 +36,10 @@ public:
     alias EdgeSelectorType = EdgeSelector;
     alias DistanceType = EdgeSelector.DistanceType;
 
-    this(in Shape shape) { 
+    this( Shape shape) { 
     }
 
-    void reset(in vec2d p) {
+    void reset( vec2d p) {
         shapeEdgeSelector.reset(p);
     }
 
@@ -47,7 +47,7 @@ public:
         return shapeEdgeSelector;
     }
 
-    DistanceType distance() const {
+    DistanceType distance()  {
         return shapeEdgeSelector.distance();
     }
 }
@@ -62,14 +62,14 @@ public:
     alias EdgeSelectorType = EdgeSelector;
     alias DistanceType = EdgeSelector.DistanceType;
 
-    this(in Shape shape) {
+    this( Shape shape) {
         windings.reserve(shape.contours.length);
         foreach (contour; shape.contours)
             windings ~= contour.winding();
         edgeSelectors.length = shape.contours.length;
     }
 
-    void reset(in vec2d p) {
+    void reset( vec2d p) {
         this.p = p;
 
         foreach (EdgeSelector contourEdgeSelector; edgeSelectors)
@@ -80,7 +80,7 @@ public:
         return edgeSelectors[i];
     }
 
-    DistanceType distance() const {
+    DistanceType distance()  {
         int contourCount = cast(int) edgeSelectors.length;
 
         EdgeSelector shapeEdgeSelector;

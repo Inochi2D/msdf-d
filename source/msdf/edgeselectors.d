@@ -18,7 +18,7 @@ private:
     SignedDistance minTrueDistance;
     double minNegativePseudoDistance;
     double minPositivePseudoDistance;
-    Rebindable!(const EdgeSegment) nearEdge;
+    EdgeSegment nearEdge;
     double nearEdgeParam;
 
 public:
@@ -29,7 +29,7 @@ public:
         double aPseudoDistance = 0, bPseudoDistance = 0;
     }
 
-    static bool getPseudoDistance(ref double distance, in vec2d ep, in vec2d edgeDir) {
+    static bool getPseudoDistance(ref double distance,  vec2d ep,  vec2d edgeDir) {
         double ts = ep.dotProduct(edgeDir);
 
         if (ts > 0) {
@@ -58,7 +58,7 @@ public:
         nearEdgeParam = 0;
     }
 
-    bool isEdgeRelevant(in EdgeCache cache, const(EdgeSegment) edge, in vec2d p) const {
+    bool isEdgeRelevant( EdgeCache cache, EdgeSegment edge,  vec2d p)  {
         double delta = DISTANCE_DELTA_FACTOR * (p-cache.point).length();
 
         return (
@@ -76,7 +76,7 @@ public:
         );
     }
 
-    void addEdgeTrueDistance(const(EdgeSegment) edge, in SignedDistance distance, double param) {
+    void addEdgeTrueDistance(EdgeSegment edge,  SignedDistance distance, double param) {
         if (distance < minTrueDistance) {
             minTrueDistance = distance;
             nearEdge = edge;
@@ -91,7 +91,7 @@ public:
             minPositivePseudoDistance = distance;
     }
 
-    void merge(in PseudoDistanceSelectorBase other) {
+    void merge( PseudoDistanceSelectorBase other) {
         if (other.minTrueDistance < minTrueDistance) {
             minTrueDistance = other.minTrueDistance;
             nearEdge = other.nearEdge;
@@ -103,7 +103,7 @@ public:
             minPositivePseudoDistance = other.minPositivePseudoDistance;
     }
 
-    double computeDistance(in vec2d p) inout {
+    double computeDistance( vec2d p)  {
         double minDistance = minTrueDistance.distance < 0 ? minNegativePseudoDistance : minPositivePseudoDistance;
         if (nearEdge) {
             SignedDistance distance = minTrueDistance;
@@ -114,7 +114,7 @@ public:
         return minDistance;
     }
 
-    SignedDistance trueDistance() inout {
+    SignedDistance trueDistance()  {
         return minTrueDistance;
     }
 }
@@ -126,13 +126,13 @@ private:
 public:
     alias DistanceType = double;
 
-    void reset(in vec2d p) {
+    void reset( vec2d p) {
         double delta = DISTANCE_DELTA_FACTOR*(p-this.p).length();
         super.reset(delta);
         this.p = p;
     }
 
-    void addEdge(ref EdgeCache cache, const(EdgeSegment) prevEdge, const(EdgeSegment) edge, const(EdgeSegment) nextEdge) {
+    void addEdge(ref EdgeCache cache, EdgeSegment prevEdge, EdgeSegment edge, EdgeSegment nextEdge) {
         if (isEdgeRelevant(cache, edge, p)) {
             double param;
             SignedDistance distance = edge.signedDistance(p, param);
@@ -165,7 +165,7 @@ public:
         }
     }
 
-    DistanceType distance() inout {
+    DistanceType distance()  {
         return computeDistance(p);
     }
 }
@@ -179,7 +179,7 @@ public:
     alias DistanceType = MultiDistance;
     alias EdgeCache = PseudoDistanceSelectorBase.EdgeCache;
 
-    void reset(in vec2d p) {
+    void reset( vec2d p) {
         double delta = DISTANCE_DELTA_FACTOR*(p-this.p).length();
         r.reset(delta);
         g.reset(delta);
@@ -187,7 +187,7 @@ public:
         this.p = p;
     }
 
-    void addEdge(ref EdgeCache cache, const(EdgeSegment) prevEdge, const(EdgeSegment) edge, const(EdgeSegment) nextEdge) {
+    void addEdge(ref EdgeCache cache, EdgeSegment prevEdge, EdgeSegment edge, EdgeSegment nextEdge) {
         if (
             (edge.color&EdgeColor.RED && r.isEdgeRelevant(cache, edge, p)) ||
             (edge.color&EdgeColor.GREEN && g.isEdgeRelevant(cache, edge, p)) ||
@@ -242,13 +242,13 @@ public:
         }
     }
 
-    void merge(in MultiDistanceSelector other) {
+    void merge( MultiDistanceSelector other) {
         r.merge(other.r);
         g.merge(other.g);
         b.merge(other.b);
     }
 
-    DistanceType distance() inout {
+    DistanceType distance()  {
         MultiDistance multiDistance;
         multiDistance.r = r.computeDistance(p);
         multiDistance.g = g.computeDistance(p);
@@ -256,7 +256,7 @@ public:
         return multiDistance;
     }
 
-    SignedDistance trueDistance() inout {
+    SignedDistance trueDistance()  {
         SignedDistance distance = r.trueDistance();
         if (g.trueDistance() < distance)
             distance = g.trueDistance();

@@ -19,7 +19,7 @@ public:
         pixels = new T[N*w*h];
     }
 
-    this(const(Bitmap!(T, N)) orig) {
+    this(Bitmap!(T, N) orig) {
         w = orig.w;
         h = orig.h;
 
@@ -27,7 +27,7 @@ public:
     }
 
     version(none)
-    Bitmap!(T, N) opAssign(const(Bitmap!(T, N)) orig) {
+    Bitmap!(T, N) opAssign(Bitmap!(T, N) orig) {
         if (pixels != orig.pixels) {
             w = orig.w;
             h = orig.h;
@@ -38,19 +38,19 @@ public:
         return this;
     }
 
-    int width() const {
+    int width()  {
         return w;
     }
 
-    int height() const {
+    int height()  {
         return h;
     }
 
-    inout(T)* opCall(int x, int y) inout {
+    T* opCall(int x, int y) {
         return &pixels[N * (w*y+x)];
     }
 
-    inout(T)* opCast(T)() inout {
+    T* opCast(T)() {
         return pixels.ptr;
     }
 }

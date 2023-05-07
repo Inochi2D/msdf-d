@@ -68,10 +68,10 @@ enum DistanceCheckMode {
 struct ErrorCorrectionConfig {
     
     /// The default value of minDeviationRatio.
-    static const double defaultMinDeviationRatio = 1.11111111111111111;
+    static  double defaultMinDeviationRatio = 1.11111111111111111;
 
     /// The default value of minImproveRatio.
-    static const double defaultMinImproveRatio = 1.11111111111111111;
+    static  double defaultMinImproveRatio = 1.11111111111111111;
 
     /// Mode of operation.
     Mode mode;
@@ -113,7 +113,7 @@ private:
 public:
     alias BitmapType = Bitmap!(float, 1);
 
-    void opCall(float* pixels, ref const(MultiDistance) distance) {
+    void opCall(float* pixels, ref MultiDistance distance) {
         *pixels = cast(float) (invRange * distance * 0.5);
     }
 }
@@ -126,15 +126,14 @@ private:
 public:
     alias BitmapType = Bitmap!(float, 3);
 
-    void opCall(float* pixels, ref const(MultiDistance) distance)
-        in(pixels.length == 3, "Invalid pixels length.") {
+    void opCall(float* pixels, ref MultiDistance distance) {
         pixels[0] = cast(float) (invRange * distance.r + .5);
         pixels[1] = cast(float) (invRange * distance.g + .5);
         pixels[2] = cast(float) (invRange * distance.b + .5);
     }
 }
 
-void generateDistanceField(ContourCombiner)(DistancePixelConversion!(ContourCombiner.DistanceType).BitmapType output, const(Shape) shape, const(Projection) projection, double range) {
+void generateDistanceField(ContourCombiner)(DistancePixelConversion!(ContourCombiner.DistanceType).BitmapType output, Shape shape, Projection projection, double range) {
     auto distancePixelConversion = new DistancePixelConversion!(ContourCombiner.DistanceType)();
     
     auto distanceFinder = new ShapeDistanceFinder!ContourCombiner(shape);

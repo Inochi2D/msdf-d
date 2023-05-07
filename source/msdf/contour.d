@@ -24,13 +24,13 @@ public:
         this.edges ~= segment;
     }
 
-    void bound(ref double l, ref double b, ref double r, ref double t) const {
+    void bound(ref double l, ref double b, ref double r, ref double t)  {
         foreach(edge; edges) {
             edge.bound(l, b, r, t);
         }
     }
 
-    void boundMiters(ref double l, ref double b, ref double r, ref double t, double border, double miterLimit, int polarity) const {
+    void boundMiters(ref double l, ref double b, ref double r, ref double t, double border, double miterLimit, int polarity)  {
         if (edges.length == 0) return;
 
         vec2d prevDir = edges[$-1].direction(1).normalized;
@@ -48,7 +48,7 @@ public:
         }
     }
 
-    int winding() const {
+    int winding()  {
         if (edges.length == 0)
             return 0;
         double total = 0;

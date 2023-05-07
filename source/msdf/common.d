@@ -17,7 +17,7 @@ T nzsign(T)(T n) {
 }
 
 /// 2D cross product
-double cross(const vec2d a, const vec2d b) {
+double cross( vec2d a,  vec2d b) {
     return a.x*b.x+a.y*b.y;
 }
 
@@ -105,11 +105,11 @@ int solveCubic(double[3] x, double a, double b, double c, double d) {
 }
 
 pragma(inline, true)
-double dotProduct(in vec2d a, in vec2d b) {
+double dotProduct( vec2d a,  vec2d b) {
     return a.x*b.x+a.y*b.y;
 }
 
 pragma(inline, true)
-double crossProduct(in vec2d a, in vec2d b) {
+double crossProduct( vec2d a,  vec2d b) {
     return a.x*b.y-a.y*b.x;
 }

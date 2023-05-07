@@ -9,40 +9,40 @@ public:
         translate = vec2d(0);
     }
 
-    this(in vec2d scale, in vec2d translate) {
+    this( vec2d scale,  vec2d translate) {
         this.scale = scale;
         this.translate = translate;
     }
 
-    vec2d project(in vec2d coord) const {
+    vec2d project( vec2d coord)  {
         return scale * (coord + translate);
     }
 
-    vec2d unproject(in vec2d coord) const {
+    vec2d unproject( vec2d coord)  {
         return vec2d(coord.x / scale.x, coord.y / scale.y) - translate;
     }
 
-    vec2d projectVector(in vec2d vector) const {
+    vec2d projectVector( vec2d vector)  {
         return scale * vector;
     }
 
-    vec2d unprojectVector(in vec2d vector) const {
+    vec2d unprojectVector( vec2d vector)  {
         return vec2d(vector.x / scale.x, vector.y - scale.y);
     }
 
-    double projectX(double x) const {
+    double projectX(double x)  {
         return scale.x * (x + translate.x);
     }
 
-    double projectY(double y) const {
+    double projectY(double y)  {
         return scale.y * (y + translate.y);
     }
 
-    double unprojectX(double x) const {
+    double unprojectX(double x)  {
         return x / scale.x - translate.x;
     }
 
-    double unprojectY(double y) const {
+    double unprojectY(double y)  {
         return y / scale.y - translate.y;
     }
 
