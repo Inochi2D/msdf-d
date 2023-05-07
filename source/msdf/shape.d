@@ -3,6 +3,7 @@ import msdf.contour;
 import msdf.scanline;
 import msdf.segment;
 import inmath;
+import std.typecons : Rebindable;
 import std.algorithm.sorting;
 
 enum MSDFGEN_CORNER_DOT_EPSILON = 0.000001;
@@ -184,5 +185,72 @@ public:
         foreach(i; 0..contours.length)
             if (orientations[i] < 0)
                 contours[i].reverse();
+    }
+}
+
+class ShapeDistanceFinder(ContourCombiner) {
+private:
+    Shape shape;
+    ContourCombiner contourCombiner;
+    ContourCombiner.EdgeSelectorType.EdgeCache[] shapeEdgeCache;
+
+public:
+    alias DistanceType = ContourCombiner.DistanceType;
+
+    this(Shape shape) {
+        this.shape = shape;
+        contourCombiner = new ContourCombiner(shape);
+        shapeEdgeCache.length = shape.edgeCount();
+    }
+
+    // TODO: @Luna please take a look at this particular method, I have *no* clue what the original C++ version
+    // is trying to achieve. -Zye
+    DistanceType distance(in vec2d origin) {
+        contourCombiner.reset(origin);
+        auto edgeCache = &shapeEdgeCache[0];
+
+        foreach (contour; shape.contours) {
+            if (contour.edges.length == 0)
+                continue;
+
+            auto edgeSelector = contourCombiner.edgeSelector(cast(int) (contour - shape.contours[0]));
+
+            auto prevEdge = contour.edges.length >= 2 ? contour.edges[$-2] : contour.edges[0];
+            auto curEdge = contour.edges[$-1];
+
+            foreach (edge; contour.edges) {
+                auto nextEdge = edge;
+                edgeSelector.addEdge(*edgeCache++, prevEdge, curEdge, nextEdge);
+                prevEdge = curEdge;
+                curEdge = nextEdge;
+            }
+        }
+
+        return contourCombiner.distance();
+    }
+
+    static DistanceType oneShotDistance(Shape shape, in vec2d origin) {
+        auto contourCombiner = ContourCombiner(shape);
+        contourCombiner.reset(origin);
+
+        foreach (contour; shape.contours) {
+            if (contour.edges.length == 0)
+                continue;
+
+            auto edgeSelector = contourCombiner.edgeSelector(cast(int) (contour - shape.contours[0]));
+
+            auto prevEdge = contour.edges.length >= 2 ? contour.edges[$-2] : contour.edges[0];
+            auto curEdge = contour.edges[$-1];
+
+            foreach (edge; contour.edges) {
+                auto nextEdge = edge;
+                ContourCombiner.EdgeSelectorType.EdgeCache dummy;
+                edgeSelector.addEdge(dummy, prevEdge, curEdge, nextEdge);
+                prevEdge = curEdge;
+                curEdge = nextEdge;
+            }
+        }
+
+        return contourCombiner.distance();
     }
 }
