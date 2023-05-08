@@ -3,6 +3,7 @@ import msdf.contour;
 import msdf.scanline;
 import msdf.segment;
 import inmath;
+import std.typecons : Rebindable;
 import std.algorithm.sorting;
 
 enum MSDFGEN_CORNER_DOT_EPSILON = 0.000001;
@@ -21,13 +22,16 @@ private {
     }
 }
 
+/// Vector shape representation.
 class Shape {
 public:
     struct Bounds {
         double l, b, r, t;
     }
 
+    /// The list of contours the shape consists of.
     Contour[] contours;
+    /// Specifies whether the shape uses bottom-to-top (false) or top-to-bottom (true) Y coordinates.
     bool inverseYAxis;
 
     this() {
@@ -65,7 +69,7 @@ public:
     }
 
     /// Performs basic checks to determine if the object represents a valid shape.
-    bool validate() const {
+    bool validate()  {
         foreach(ref contour; contours) {
             if (contour.edges.length != 0) {
                 vec2d corner = contour.edges[$-1].point(1);
@@ -80,20 +84,20 @@ public:
     }
 
     /// Adjusts the bounding box to fit the shape.
-    void bound(ref double l, ref double b, ref double r, ref double t) const {
+    void bound(ref double l, ref double b, ref double r, ref double t)  {
         foreach(ref contour; contours) 
             contour.bound(l, b, r, t);
     }
 
     /// Adjusts the bounding box to fit the shape border's mitered corners.
-    void boundMiters(ref double l, ref double b, ref double r, ref double t, double border, double miterLimit, int polarity) const {
+    void boundMiters(ref double l, ref double b, ref double r, ref double t, double border, double miterLimit, int polarity)  {
         foreach(ref contour; contours) 
             contour.boundMiters(l, b, r, t, border, miterLimit, polarity);
     }
 
     /// Computes the minimum bounding box that fits the shape, optionally with a (mitered) border.
-    Bounds getBounds(double border = 0, double miterLimit = 0, int polarity = 0) const {
-        static const double LARGE_VALUE = 1e240;
+    Bounds getBounds(double border = 0, double miterLimit = 0, int polarity = 0)  {
+        static  double LARGE_VALUE = 1e240;
         Bounds bounds = { +LARGE_VALUE, +LARGE_VALUE, -LARGE_VALUE, -LARGE_VALUE };
         bound(bounds.l, bounds.b, bounds.r, bounds.t);
         if (border > 0) {
@@ -106,7 +110,7 @@ public:
     }
 
     /// Outputs the scanline that intersects the shape at y.
-    void scanline(ref Scanline line, double y) const {
+    void scanline(ref Scanline line, double y)  {
         Scanline.Intersection[] intersections;
         double[3] x;
         int[3] dy;
@@ -123,7 +127,7 @@ public:
     }
 
     /// Returns the total number of edge segments
-    int edgeCount() const {
+    int edgeCount()  {
         int total = 0;
         foreach(ref contour; contours) total += cast(int)contour.edges.length;
         return total;
@@ -137,7 +141,7 @@ public:
             int contourIndex;
         }
 
-        const double ratio = .5*(sqrt(5.0)-1.0); // an irrational number to minimize chance of intersecting a corner or other point of interest
+         double ratio = .5*(sqrt(5.0)-1.0); // an irrational number to minimize chance of intersecting a corner or other point of interest
         int[] orientations = new int[contours.length];
         Intersection[] intersections;
         for (int i = 0; i < cast(int)contours.length; ++i) {
@@ -149,7 +153,7 @@ public:
                     y1 = edge.point(1).y;
                 foreach (ref edge; contours[i].edges)
                     y1 = edge.point(ratio).y; // in case all endpoints are in a horizontal line
-                double y = mix(y0, y1, ratio);
+                double y = lerp(y0, y1, ratio);
                 // Scanline through whole shape at Y
                 double[3] x;
                 int[3] dy;
@@ -157,7 +161,7 @@ public:
                     foreach (ref edge; contours[j].edges) {
                         int n = edge.scanlineIntersections(x, dy, y);
                         for (int k = 0; k < n; ++k) {
-                            Intersection intersection = { x[k], dy[k], j };
+                            Intersection intersection = { x[k], dy[k], cast(int) j };
                             intersections ~= intersection;
                         }
                     }
@@ -181,5 +185,72 @@ public:
         foreach(i; 0..contours.length)
             if (orientations[i] < 0)
                 contours[i].reverse();
+    }
+}
+
+class ShapeDistanceFinder(ContourCombiner) {
+private:
+    Shape shape;
+    ContourCombiner contourCombiner;
+    ContourCombiner.EdgeSelectorType.EdgeCache[] shapeEdgeCache;
+
+public:
+    alias DistanceType = ContourCombiner.DistanceType;
+
+    this(Shape shape) {
+        this.shape = shape;
+        contourCombiner = new ContourCombiner(shape);
+        shapeEdgeCache.length = shape.edgeCount();
+    }
+
+    // TODO: @Luna please take a look at this particular method, I have *no* clue what the original C++ version
+    // is trying to achieve. -Zye
+    DistanceType distance( vec2d origin) {
+        contourCombiner.reset(origin);
+        auto edgeCache = &shapeEdgeCache[0];
+
+        foreach (i, contour; shape.contours) {
+            if (contour.edges.length == 0)
+                continue;
+
+            auto edgeSelector = contourCombiner.edgeSelector(cast(int) (i)); // TODO: This was originally Contour instance minus Contour instance; what even!?
+
+            auto prevEdge = contour.edges.length >= 2 ? contour.edges[$-2] : contour.edges[0];
+            auto curEdge = contour.edges[$-1];
+
+            foreach (edge; contour.edges) {
+                auto nextEdge = edge;
+                edgeSelector.addEdge(*edgeCache++, prevEdge, curEdge, nextEdge);
+                prevEdge = curEdge;
+                curEdge = nextEdge;
+            }
+        }
+
+        return contourCombiner.distance();
+    }
+
+    static DistanceType oneShotDistance(Shape shape,  vec2d origin) {
+        auto contourCombiner = new ContourCombiner(shape);
+        contourCombiner.reset(origin);
+
+        foreach (i, contour; shape.contours) {
+            if (contour.edges.length == 0)
+                continue;
+
+            auto edgeSelector = contourCombiner.edgeSelector(cast(int) (i)); // TODO: Also were two Contour instances!
+
+            auto prevEdge = contour.edges.length >= 2 ? contour.edges[$-2] : contour.edges[0];
+            auto curEdge = contour.edges[$-1];
+
+            foreach (edge; contour.edges) {
+                auto nextEdge = edge;
+                ContourCombiner.EdgeSelectorType.EdgeCache dummy;
+                edgeSelector.addEdge(dummy, prevEdge, curEdge, nextEdge);
+                prevEdge = curEdge;
+                curEdge = nextEdge;
+            }
+        }
+
+        return contourCombiner.distance();
     }
 }

@@ -1,5 +1,7 @@
 /**
     Partial port of msdfgen by Viktor Chlumsky
+    by LunaTheFoxgirl and ZyeByte
+    Copyright (c) 2023, Inochi2D Project
     
     --- License ---
 
@@ -27,6 +29,11 @@
 module msdf;
 
 import msdf.shape;
+import msdf.bitmap;
+import msdf.contourcombiner;
+import msdf.edgeselectors;
+import msdf.projection;
+import inmath.linalg;
 
 /// Mode of operation.
 enum Mode {
@@ -61,10 +68,10 @@ enum DistanceCheckMode {
 struct ErrorCorrectionConfig {
     
     /// The default value of minDeviationRatio.
-    static const double defaultMinDeviationRatio = 1.11111111111111111;
+    static  double defaultMinDeviationRatio = 1.11111111111111111;
 
     /// The default value of minImproveRatio.
-    static const double defaultMinImproveRatio = 1.11111111111111111;
+    static  double defaultMinImproveRatio = 1.11111111111111111;
 
     /// Mode of operation.
     Mode mode;
@@ -98,6 +105,55 @@ struct GeneratorConfig {
     }
 }
 
-void generateMSDF(ref Shape shape, double range, GeneratorConfig config = GeneratorConfig(true)) {
+class DistancePixelConversion(T)
+    if (is(T == double)) {
+private:
+    double invRange;
 
+public:
+    alias BitmapType = Bitmap!(float, 1);
+
+    void opCall(float* pixels, ref MultiDistance distance) {
+        *pixels = cast(float) (invRange * distance * 0.5);
+    }
+}
+
+class DistancePixelConversion(T) 
+    if (is(T == MultiDistance)) {
+private:
+    double invRange;
+
+public:
+    alias BitmapType = Bitmap!(float, 3);
+
+    void opCall(float* pixels, ref MultiDistance distance) {
+        pixels[0] = cast(float) (invRange * distance.r + .5);
+        pixels[1] = cast(float) (invRange * distance.g + .5);
+        pixels[2] = cast(float) (invRange * distance.b + .5);
+    }
+}
+
+void generateDistanceField(ContourCombiner)(DistancePixelConversion!(ContourCombiner.DistanceType).BitmapType output, Shape shape, Projection projection, double range) {
+    auto distancePixelConversion = new DistancePixelConversion!(ContourCombiner.DistanceType)();
+    
+    auto distanceFinder = new ShapeDistanceFinder!ContourCombiner(shape);
+    bool rightToLeft = false;
+
+    for (int y = 0; y < output.height; ++y) {
+        int row = shape.inverseYAxis ? output.height-y-1 : y;
+        for (int col = 0; col < output.width; ++col) {
+            int x = rightToLeft ? output.width-col-1 : col;
+            vec2d p = projection.unproject(vec2d(x + 0.5, y + 0.5));
+            ContourCombiner.DistanceType distance = distanceFinder.distance(p);
+            distancePixelConversion(output(x, row), distance);
+        }
+        rightToLeft = !rightToLeft;
+    }
+}
+
+void generateMSDF(ref Bitmap!(float, 3) output, ref Shape shape, ref Projection projection, double range, GeneratorConfig config = GeneratorConfig(true)) {
+    if (config.overlapSupport)
+        generateDistanceField!(OverlappingContourCombiner!MultiDistanceSelector)(output, shape, projection, range);
+    else
+        generateDistanceField!(SimpleContourCombiner!MultiDistanceSelector)(output, shape, projection, range);
 }

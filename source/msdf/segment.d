@@ -3,6 +3,8 @@ import inmath;
 import inmath.interpolate;
 import inmath.math;
 import msdf.common;
+import std.math : abs;
+import msdf.signeddistance;
 
 enum EdgeColor {
     BLACK,
@@ -35,19 +37,19 @@ public:
     this(EdgeColor edgeColor = EdgeColor.WHITE) { color = edgeColor; }
 
     /// Creates a copy of the edge segment.
-    abstract EdgeSegment clone() const; 
+    abstract EdgeSegment clone() ; 
     /// Returns the point on the edge specified by the parameter (between 0 and 1).
-    abstract vec2d point(double param) const;
+    abstract vec2d point(double param) ;
     /// Returns the direction the edge has at the point specified by the parameter.
-    abstract vec2d direction(double param) const;
+    abstract vec2d direction(double param) ;
     /// Returns the change of direction (second derivative) at the point specified by the parameter.
-    abstract vec2d directionChange(double param) const;
+    abstract vec2d directionChange(double param) ;
     /// Returns the minimum signed distance between origin and the edge.
-    abstract vec2d signedDistance(vec2d origin, ref double param) const;
+    abstract SignedDistance signedDistance(vec2d origin, ref double param) ;
     /// Outputs a list of (at most three) intersections (their X coordinates) with an infinite horizontal scanline at y and returns how many there are.
-    abstract int scanlineIntersections(double[3] x, int[3] dy, double y) const;
+    abstract int scanlineIntersections(double[3] x, int[3] dy, double y) ;
     /// Adjusts the bounding box to fit the edge segment.
-    abstract void bound(ref double l, ref double b, ref double r, ref double t) const;
+    abstract void bound(ref double l, ref double b, ref double r, ref double t) ;
 
     /// Reverses the edge (swaps its start point and end point).
     abstract void reverse();
@@ -56,7 +58,33 @@ public:
     /// Moves the end point of the edge segment.
     abstract void moveEndPoint(vec2d to);
     /// Splits the edge segments into thirds which together represent the original edge.
-    abstract void splitInThirds(ref EdgeSegment part1, ref EdgeSegment part2, ref EdgeSegment part3) const;
+    abstract void splitInThirds(ref EdgeSegment part1, ref EdgeSegment part2, ref EdgeSegment part3) ;
+
+    void distanceToPseudoDistance(ref SignedDistance distance,  vec2d origin, double param)  {
+        if (param < 0) {
+            vec2d dir = direction(0).normalized();
+            vec2d aq = origin-point(0);
+            double ts = dotProduct(aq, dir);
+            if (ts < 0) {
+                double pseudoDistance = crossProduct(aq, dir);
+                if (abs(pseudoDistance) <= abs(distance.distance)) {
+                    distance.distance = pseudoDistance;
+                    distance.dot = 0;
+                }
+            }
+        } else if (param > 1) {
+            vec2d dir = direction(1).normalized();
+            vec2d bq = origin-point(1);
+            double ts = dotProduct(bq, dir);
+            if (ts > 0) {
+                double pseudoDistance = crossProduct(bq, dir);
+                if (abs(pseudoDistance) <= abs(distance.distance)) {
+                    distance.distance = pseudoDistance;
+                    distance.dot = 0;
+                }
+            }
+        }
+    }
 }
 
 class LinearSegment : EdgeSegment {
@@ -71,27 +99,27 @@ public:
     }
 
     override
-    EdgeSegment clone() const {
+    EdgeSegment clone()  {
         return new LinearSegment(p[0], p[1], color);
     }
 
     override
-    vec2d point(double param) const {
+    vec2d point(double param)  {
         return lerp(p[0], p[1], param);
     }
 
     override
-    vec2d direction(double param) const {
+    vec2d direction(double param)  {
         return p[1]-p[0];
     }
 
     override
-    vec2d directionChange(double param) const {
+    vec2d directionChange(double param)  {
         return vec2d.zero;
     }
 
     override
-    vec2d signedDistance(vec2d origin, ref double param) const {
+    SignedDistance signedDistance(vec2d origin, ref double param)  {
         vec2d aq = origin-p[0];
         vec2d ab = p[1]-p[0];
         param = dot(aq, ab)/dot(ab, ab);
@@ -100,13 +128,13 @@ public:
         if (param > 0 && param < 1) {
             double orthoDistance = dot(ab.getOrthonormal(false), aq);
             if (abs(orthoDistance) < endpointDistance)
-                return vec2d(orthoDistance, 0);
+                return SignedDistance(orthoDistance, 0);
         }
-        return vec2d(nzsign(cross(aq, ab))*endpointDistance, abs(dot(ab.normalized(), eq.normalized())));
+        return SignedDistance(nzsign(cross(aq, ab))*endpointDistance, abs(dot(ab.normalized(), eq.normalized())));
     }
 
     override
-    int scanlineIntersections(double[3] x, int[3] dy, double y) const {
+    int scanlineIntersections(double[3] x, int[3] dy, double y)  {
         if ((y >= p[0].y && y < p[1].y) || (y >= p[1].y && y < p[0].y)) {
             double param = (y-p[0].y)/(p[1].y-p[0].y);
             x[0] = lerp(p[0].x, p[1].x, param);
@@ -117,7 +145,7 @@ public:
     }
 
     override
-    void bound(ref double l, ref double b, ref double r, ref double t) const {
+    void bound(ref double l, ref double b, ref double r, ref double t)  {
         _msdfSegPointBounds(p[0], l, b, r, t);
         _msdfSegPointBounds(p[1], l, b, r, t);
     }
@@ -140,13 +168,13 @@ public:
     }
 
     override 
-    void splitInThirds(ref EdgeSegment part1, ref EdgeSegment part2, ref EdgeSegment part3) const {
+    void splitInThirds(ref EdgeSegment part1, ref EdgeSegment part2, ref EdgeSegment part3)  {
         part1 = new LinearSegment(p[0], point(1/3.0), color);
         part2 = new LinearSegment(point(1/3.0), point(2/3.0), color);
         part3 = new LinearSegment(point(2/3.0), p[1], color);
     }
 
-    double length() const {
+    double length()  {
         return (p[0]-p[1]).length;
     }
 }
@@ -167,17 +195,17 @@ public:
     }
 
     override
-    EdgeSegment clone() const {
+    EdgeSegment clone()  {
         return new QuadraticSegment(p[0], p[1], p[2], color);
     }
 
     override
-    vec2d point(double param) const {
+    vec2d point(double param)  {
         return lerp(lerp(p[0], p[1], param), lerp(p[1], p[2], param), param);
     }
 
     override
-    vec2d direction(double param) const {
+    vec2d direction(double param)  {
         vec2d tangent = lerp(p[1]-p[0], p[2]-p[1], param);
         if (!tangent.x && !tangent.y)
             return p[2]-p[0];
@@ -185,12 +213,12 @@ public:
     }
 
     override
-    vec2d directionChange(double param) const {
+    vec2d directionChange(double param)  {
         return (p[2]-p[1])-(p[1]-p[0]);
     }
 
     override
-    vec2d signedDistance(vec2d origin, ref double param) const {
+    SignedDistance signedDistance(vec2d origin, ref double param)  {
         vec2d qa = p[0]-origin;
         vec2d ab = p[1]-p[0];
         vec2d br = p[2]-p[1]-ab;
@@ -224,16 +252,16 @@ public:
         }
 
         if (param >= 0 && param <= 1)
-            return vec2d(minDistance, 0);
+            return SignedDistance(minDistance, 0);
         if (param < .5)
-            return vec2d(minDistance, abs(dot(direction(0).normalized(), qa.normalized())));
+            return SignedDistance(minDistance, abs(dot(direction(0).normalized(), qa.normalized())));
         else
-            return vec2d(minDistance, abs(dot(direction(1).normalized(), (p[2]-origin).normalized())));
+            return SignedDistance(minDistance, abs(dot(direction(1).normalized(), (p[2]-origin).normalized())));
     }
     
 
     override
-    int scanlineIntersections(double[3] x, int[3] dy, double y) const {
+    int scanlineIntersections(double[3] x, int[3] dy, double y)  {
         int total = 0;
         int nextDY = y > p[0].y ? 1 : -1;
         x[total] = p[0].x;
@@ -288,7 +316,7 @@ public:
     }
 
     override
-    void bound(ref double l, ref double b, ref double r, ref double t) const {
+    void bound(ref double l, ref double b, ref double r, ref double t)  {
         _msdfSegPointBounds(p[0], l, b, r, t);
         _msdfSegPointBounds(p[2], l, b, r, t);
         vec2d bot = (p[1]-p[0])-(p[2]-p[1]);
@@ -327,13 +355,13 @@ public:
     }
 
     override
-    void splitInThirds(ref EdgeSegment part1, ref EdgeSegment part2, ref EdgeSegment part3) const {
+    void splitInThirds(ref EdgeSegment part1, ref EdgeSegment part2, ref EdgeSegment part3)  {
         part1 = new QuadraticSegment(p[0], lerp(p[0], p[1], 1/3.), point(1/3.), color);
         part2 = new QuadraticSegment(point(1/3.), lerp(lerp(p[0], p[1], 5/9.), lerp(p[1], p[2], 4/9.), .5), point(2/3.), color);
         part3 = new QuadraticSegment(point(2/3.), lerp(p[1], p[2], 2/3.), p[2], color);
     }
 
-    double length() const {
+    double length()  {
         vec2d ab = p[1]-p[0];
         vec2d br = p[2]-p[1]-ab;
         double abab = dot(ab, ab);
@@ -349,7 +377,7 @@ public:
         )/(brbr*brLen);
     }
 
-    EdgeSegment convertToCubic() const {
+    EdgeSegment convertToCubic()  {
         return new CubicSegment(p[0], lerp(p[0], p[1], 2/3.), lerp(p[1], p[2], 1/3.), p[2], color);
     }
     
@@ -373,18 +401,18 @@ public:
     }
 
     override
-    EdgeSegment clone() const {
+    EdgeSegment clone()  {
         return new CubicSegment(p[0], p[1], p[2], p[3], color);
     }
 
     override
-    vec2d point(double param) const {
+    vec2d point(double param)  {
         vec2d p12 = lerp(p[1], p[2], param);
         return lerp(lerp(lerp(p[0], p[1], param), p12, param), lerp(p12, lerp(p[2], p[3], param), param), param);
     }
 
     override
-    vec2d direction(double param) const {
+    vec2d direction(double param)  {
         vec2d tangent = lerp(lerp(p[1]-p[0], p[2]-p[1], param), lerp(p[2]-p[1], p[3]-p[2], param), param);
         if (!tangent.x && !tangent.y) {
             if (param == 0) return p[2]-p[0];
@@ -394,12 +422,12 @@ public:
     }
 
     override
-    vec2d directionChange(double param) const {
+    vec2d directionChange(double param)  {
         return lerp((p[2]-p[1])-(p[1]-p[0]), (p[3]-p[2])-(p[2]-p[1]), param);
     }
 
     override
-    vec2d signedDistance(vec2d origin, ref double param) const {
+    SignedDistance signedDistance(vec2d origin, ref double param)  {
         vec2d qa = p[0]-origin;
         vec2d ab = p[1]-p[0];
         vec2d br = p[2]-p[1]-ab;
@@ -437,15 +465,15 @@ public:
         }
 
         if (param >= 0 && param <= 1)
-            return vec2d(minDistance, 0);
+            return SignedDistance(minDistance, 0);
         if (param < .5)
-            return vec2d(minDistance, abs(dot(direction(0).normalized(), qa.normalized())));
+            return SignedDistance(minDistance, abs(dot(direction(0).normalized(), qa.normalized())));
         else
-            return vec2d(minDistance, abs(dot(direction(1).normalized(), (p[3]-origin).normalized())));
+            return SignedDistance(minDistance, abs(dot(direction(1).normalized(), (p[3]-origin).normalized())));
     }
 
     override
-    int scanlineIntersections(double[3] x, int[3] dy, double y) const {
+    int scanlineIntersections(double[3] x, int[3] dy, double y)  {
         int total = 0;
         int nextDY = y > p[0].y ? 1 : -1;
         x[total] = p[0].x;
@@ -508,7 +536,7 @@ public:
     }
 
     override
-    void bound(ref double l, ref double b, ref double r, ref double t) const {
+    void bound(ref double l, ref double b, ref double r, ref double t)  {
         _msdfSegPointBounds(p[0], l, b, r, t);
         _msdfSegPointBounds(p[3], l, b, r, t);
         vec2d a0 = p[1]-p[0];
@@ -549,7 +577,7 @@ public:
     }
 
     override
-    void splitInThirds(ref EdgeSegment part1, ref EdgeSegment part2, ref EdgeSegment part3) const {
+    void splitInThirds(ref EdgeSegment part1, ref EdgeSegment part2, ref EdgeSegment part3)  {
         part1 = new CubicSegment(p[0], p[0] == p[1] ? p[0] : lerp(p[0], p[1], 1/3.), lerp(lerp(p[0], p[1], 1/3.), lerp(p[1], p[2], 1/3.), 1/3.), point(1/3.), color);
         part2 = new CubicSegment(point(1/3.),
             lerp(lerp(lerp(p[0], p[1], 1/3.), lerp(p[1], p[2], 1/3.), 1/3.), lerp(lerp(p[1], p[2], 1/3.), lerp(p[2], p[3], 1/3.), 1/3.), 2/3.),
