@@ -20,7 +20,7 @@ struct Contour {
 public:
     EdgeSegment[] edges;
 
-    void addEdge(EdgeSegment segment) {
+    void addEdge(EdgeSegment segment) nothrow {
         this.edges ~= segment;
     }
 

@@ -34,7 +34,7 @@ class EdgeSegment {
 public:
     EdgeColor color;
 
-    this(EdgeColor edgeColor = EdgeColor.WHITE) { color = edgeColor; }
+    this(EdgeColor edgeColor = EdgeColor.WHITE) nothrow { color = edgeColor; }
 
     /// Creates a copy of the edge segment.
     abstract EdgeSegment clone() ; 
@@ -91,7 +91,7 @@ class LinearSegment : EdgeSegment {
 public:
     vec2d[2] p;
 
-    this(vec2d p0, vec2d p1, EdgeColor edgeColor = EdgeColor.WHITE) {
+    this(vec2d p0, vec2d p1, EdgeColor edgeColor = EdgeColor.WHITE) nothrow {
         super(edgeColor);
         this.p[0] = p0;
         this.p[1] = p1;
@@ -183,7 +183,7 @@ class QuadraticSegment : EdgeSegment {
 public:
     vec2d[3] p;
 
-    this(vec2d p0, vec2d p1, vec2d p2, EdgeColor edgeColor = EdgeColor.WHITE) {
+    this(vec2d p0, vec2d p1, vec2d p2, EdgeColor edgeColor = EdgeColor.WHITE) nothrow {
         super(edgeColor);
 
         if (p1 == p0 || p1 == p2)
@@ -387,7 +387,7 @@ class CubicSegment : EdgeSegment {
 public:
     vec2d[4] p;
 
-    this(vec2d p0, vec2d p1, vec2d p2, vec2d p3, EdgeColor edgeColor = EdgeColor.WHITE) {
+    this(vec2d p0, vec2d p1, vec2d p2, vec2d p3, EdgeColor edgeColor = EdgeColor.WHITE) nothrow {
         super(edgeColor);
 
         if ((p1 == p0 || p1 == p3) && (p2 == p0 || p2 == p3)) {
