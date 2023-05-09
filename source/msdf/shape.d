@@ -38,6 +38,11 @@ public:
         this.inverseYAxis = false;
     }
 
+    Contour* addContour() nothrow {
+        contours.length += 1;
+        return &contours[$ - 1];
+    }
+
     /// Adds a contour.
     void addContour(Contour contour) {
         this.contours ~= contour;
